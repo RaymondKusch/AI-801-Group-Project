@@ -56,8 +56,8 @@ class Agent:
                 # Step 3: Simulation
                 simulation_found_solution, simulation_puzzle= self.runFullSimulation(follow_up_action)
                 if simulation_found_solution:
-                    print("Solution randomly found")
-                    print(simulation_puzzle)
+                    #print("Solution randomly found")
+                    #print(simulation_puzzle)
                     self.solution= simulation_puzzle
 
                 # Step 4: Backpropagation
@@ -150,13 +150,15 @@ class Agent:
                 else:
                     break
 
-            # Take a random action (because MCTS loves random simulations)
-            randomly_chosen_action = random.choice(possible_actions)
-            row = randomly_chosen_action.row
-            column = randomly_chosen_action.column
-            number = randomly_chosen_action.value
+            # In sudoku, a truly random choice is pretty ineffective.
+            # Instead, do a WEIGHTED random choice, where we score the choices and 
+            # we are more likely to pick a higher scoring action
+            chosen_action = self.randomWeightedChoice(possible_actions, simulated_puzzle.state)
+            row = chosen_action.row
+            column = chosen_action.column
+            number = chosen_action.value
             simulated_puzzle.state[row][column] = number
-            actions_taken.append(randomly_chosen_action)
+            actions_taken.append(chosen_action)
 
             # If we solved the puzzle, just quit while we are ahead
             if self.puzzleIsSolved(simulated_puzzle):
@@ -167,6 +169,33 @@ class Agent:
         #end while
         # We failed to solve the puzzle randomly
         return False, None
+    
+    def randomWeightedChoice(self, actions, state):
+        choice= None
+        scores= []
+        total_score= 0
+        for action in actions:
+            puzzle_copy= copy.deepcopy(state)
+            puzzle_copy[action.row][action.column]= action.value
+            score= self.heuristic(puzzle_copy)
+            scores.append(score)
+            total_score+= score
+
+        weights= []
+        total_weight= 0
+        for score_index in range(len(scores)):
+            score= scores[score_index]
+            weight= score/total_score
+            weights.append(weight)
+            total_weight+= weight
+        #if total_weight != 1:
+        #    print(f"Total weight not 1! Making a generic random choice! Calculated_total: {total_weight}")
+        #    random.choice(actions)
+
+        choice= random.choices(actions, weights=weights)[0]
+        return choice
+
+
 
 
     """
@@ -219,7 +248,7 @@ class Agent:
     """
     def determineStateChildren(self, state):
         if state.children != []:# node already expanded, just pick something
-            return random.choice(state.children)
+            return state#random.choice(state.children)
         
         """ 
         TODO: There is an unnecessary loop here.  If we build the nodes when we get the actions, we can avoid having to loop over get possible actions again.
@@ -244,7 +273,7 @@ class Agent:
         # There are children, Return a random possible action
         # TODO: Try only expanding the node, no random choice
         else:
-            return random.choice(state.children)
+            return state#random.choice(state.children)
 
     """
     Use a given state (puzzle matrix, not Node) to find every possible action
