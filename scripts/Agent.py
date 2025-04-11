@@ -19,7 +19,7 @@ class Agent:
     """
     def __init__(self, puzzle, heuristic):
         self.currentState= puzzle
-        self.initialStae= puzzle
+        self.initialState= puzzle
         self.heuristic= heuristic
         self.solution= None
 
@@ -52,9 +52,9 @@ class Agent:
                     print("Follow up action invalid!")
                     print(self.currentState)
                     return None
-                
+
                 # Step 3: Simulation
-                simulation_found_solution, simulation_puzzle= self.runPartialSimulation(follow_up_action)#self.runFullSimulation(follow_up_action)
+                simulation_found_solution, simulation_puzzle= self.runFullSimulation(follow_up_action)
                 if simulation_found_solution:
                     print("Solution randomly found")
                     print(simulation_puzzle)
@@ -98,6 +98,16 @@ class Agent:
                 node_to_update.timesSeenAndWon += 1
             node_to_update= node_to_update.parent
 
+    # Turn the state (matrix) into a tuple
+    # Lists can't be found with the 'in' command (i.e. if theoritical_state in state)
+    # It does work with tuples, so sometimes we need to convert a state into a tuple
+    def tuplify(self, state):
+        result = []
+        for row in state:
+            result.append(tuple(row))
+        result = tuple(result)
+        return result
+
     """
     Peform the random simulation on the given puzzle
     Return a bool, True if the simulation found the solution
@@ -105,67 +115,60 @@ class Agent:
     """
     def runFullSimulation(self, puzzle):
         # Copy the puzzle so we don't make changes to the original while simulating
-        simulated_puzzle= copy.deepcopy(puzzle)
-        solvable= self.stateIsValid(simulated_puzzle.state) and not self.puzzleIsFilled(simulated_puzzle.state)
-    
+        simulated_puzzle = copy.deepcopy(puzzle)
+        solvable = self.stateIsValid(simulated_puzzle.state) and not self.puzzleIsFilled(simulated_puzzle.state)
+
+        # Build the things to track visited nodes and actions
+        actions_taken = []
+        visited = []
+
+        # Add initial state to visited set
+        state_as_tuple= self.tuplify(simulated_puzzle.state)
+        visited.append(state_as_tuple)
+
         # So long as there is hope of solving the puzzle, keep simulating
         while solvable:
             # Get the possible actions
-            possible_actions= self.getPossibleActions(simulated_puzzle.state)
+            possible_actions = self.getPossibleActions(simulated_puzzle.state)
             if possible_actions == []:
-                break
+                # No possible actio need to backtrack
+                if actions_taken != []:
+                    # Undo the last action
+                    previous_action = actions_taken.pop()
+                    simulated_puzzle.state[previous_action.row][previous_action.column] = 0  # Reset the cell
 
-            # Randomly simulate an action
-            randomly_chosen_action= random.choice(possible_actions)
-            row= randomly_chosen_action.row
-            col= randomly_chosen_action.column
-            number= randomly_chosen_action.value
+                    # Check if we've already done this state befare
+                    state_as_tuple= self.tuplify(simulated_puzzle.state)
+                    if state_as_tuple in visited:
+                        break # Don't repeat things, that's how you get stuck in infinite loops
 
-            # Apply the random action
-            simulated_puzzle.state[row][col]= number
+                    # Mark state as visited
+                    state_as_tuple= self.tuplify(simulated_puzzle.state)
+                    visited.append(state_as_tuple)
 
-            # Check if the puzzle is solved
+                    continue
+                else:
+                    break
+
+            # Take a random action (because MCTS loves random simulations)
+            randomly_chosen_action = random.choice(possible_actions)
+            row = randomly_chosen_action.row
+            column = randomly_chosen_action.column
+            number = randomly_chosen_action.value
+            simulated_puzzle.state[row][column] = number
+            actions_taken.append(randomly_chosen_action)
+
+            # If we solved the puzzle, just quit while we are ahead
             if self.puzzleIsSolved(simulated_puzzle):
-                return True, simulated_puzzle #Puzzle solved!
+                return True, simulated_puzzle
 
-            # Puzzle is not solved, see if it is still solvable
-            solvable= self.stateIsValid(simulated_puzzle.state) and not self.puzzleIsFilled(simulated_puzzle.state)
-        
-        # Puzzle not solved
+            # Puzzle is not solved, make sure it is still solvable
+            solvable = self.stateIsValid(simulated_puzzle.state) and not self.puzzleIsFilled(simulated_puzzle.state)
+        #end while
+        # We failed to solve the puzzle randomly
         return False, None
-    
-
-    #WIP NOT FUNCTIONING YET
-    def runPartialSimulation(self, puzzle):
-        simulated_puzzle= copy.deepcopy(puzzle)
-        
-        action= simulated_puzzle.action
-        if action is None:
-            return False, simulated_puzzle
-        row= action.row
-        column= action.column
-
-        valid_numbers= set(range(1,10)) # 1 - 9
-        numbers_in_row= set(simulated_puzzle.state[row])
-        available_numbers= valid_numbers - numbers_in_row
-        available_numbers= list(available_numbers)
-
-        for box in range(len(simulated_puzzle.state[row])):
-            if simulated_puzzle.state[row][box] != 0 or available_numbers == []:
-                continue # This box already has a value in it
-
-            # Box is empty and needs to be filled
-            number= random.choice(available_numbers)
-            available_numbers.remove(number)
-            simulated_puzzle.state[row][box]= number
 
 
-        state_valid= self.stateIsValid(simulated_puzzle.state)
-
-        return state_valid, simulated_puzzle
-            
-
-    
     """
     Figure out what action is the best action to take
     This is the selection step
@@ -216,7 +219,7 @@ class Agent:
     """
     def determineStateChildren(self, state):
         if state.children != []:# node already expanded, just pick something
-            return state#random.choice(state.children)
+            return random.choice(state.children)
         
         """ 
         TODO: There is an unnecessary loop here.  If we build the nodes when we get the actions, we can avoid having to loop over get possible actions again.
@@ -241,7 +244,7 @@ class Agent:
         # There are children, Return a random possible action
         # TODO: Try only expanding the node, no random choice
         else:
-            return state#random.choice(state.children)
+            return random.choice(state.children)
 
     """
     Use a given state (puzzle matrix, not Node) to find every possible action
@@ -261,11 +264,27 @@ class Agent:
                 # Box is empty
                 # Determine every possible action that can be performed on this one box
                 for number in VALID_NUMBERS:
-                    #######
-                    # TODO: Prune invalid actions (columns and boxes)
-                    #######
+                    # prune invalid actions based on rows
                     if number in state[row_num]:
                         continue
+                    # prune invalid actions based on col
+                    if number in [state[row][box_num] for row in range(len(state))]:
+                        continue
+                    
+                    # Prune invalid actions based on subgrid
+                    row= (row_num//3)* 3
+                    col= (box_num//3)* 3
+                    valid= True
+                    for box_row in range(row, row+3):
+                        for box_col in range(col, col+3):
+                            if number == state[box_row][box_col]:
+                                valid= False
+                                break
+                        if valid==False:
+                            break
+                    if valid==False:
+                        continue
+
                     action= Action(row_num,box_num,number)
                     possible_actions.append(action)
             
@@ -291,12 +310,6 @@ class Agent:
 
 
     # VALIDATION FUNCTIONS (Used to check states)
-    """
-    TODO: The validation functions are killing the speed.
-    I've heard sets might be faster than list looping, look into those.
-    We just really need to simplify these
-    """
-
 
     """ 
     Check if every box in the puzzle is filled.
@@ -317,52 +330,38 @@ class Agent:
     Return True if there are no broken rules
     Return False if there a broken rule is found
     """
+    
+    
     def stateIsValid(self, state) -> bool:
-        # Check each row
-        if self.validateRows(state) == False:
-            return False
-        # If we get here, the rows are valid
+        # Build sets we will use to validate
+        # Sets are supposed to be way faster than lists
+        dimension= len(state)
+        rows= []
+        for number in range(dimension):
+            rows.append(set())
+        cols= []
+        for number in range(dimension):
+            cols.append(set())
+        subgrids= []
+        for number in range(dimension):
+            subgrids.append(set())
 
-        # Check the columns
-        if self.validateColumns(state) == False:
-            return False
-        # If we get here, the columns AND rows are valid
 
-        # Check the sub 3x3 grids
-        if self.validateSubGrids(state) == False:
-            return False
-
+        for row in range(dimension):
+            for column in range(dimension):
+                number= state[row][column]
+                if number == 0:
+                    continue #box is empty, no broken rules
+                subgrid_start= (row//3)*3 + (column//3)
+                if number in rows[row] or number in cols[column] or number in subgrids[subgrid_start]:
+                    return False # Repeated number found, that means the state is invalid
+                
+                rows[row].add(number)
+                cols[column].add(number)
+                subgrids[subgrid_start].add(number)
         return True
     
-    def validateRows(self, state) -> bool:
-        for row in state:
-            numbers_in_row= []
-            for number in row:
-                if number == 0: continue
-                if number in numbers_in_row:
-                    return False
-                numbers_in_row.append(number)
-        return True
-    def validateColumns(self, state) -> bool:
-        for column in range(len(state)):
-            numbers_in_column= []
-            for row in range(len(state)):
-                number= state[row][column]
-                if number == 0: continue
-                if number in numbers_in_column:
-                    return False
-                numbers_in_column.append(number)
-        return True
-    def validateSubGrids(self, state) -> bool:
-        for row in range(0,9,3):
-            for column in range(0,9,3):
-                numbers_in_subgrid= []
-                for subgrid_row in range(row,row+3):
-                    for subgrid_column in range(column,column+3):
-                        number= state[subgrid_row][subgrid_column]
-                        if number == 0: continue
-                        if number in numbers_in_subgrid:
-                            return False
-                        numbers_in_subgrid.append(number)
-        return True
+
     # END VALIDATION FUNCTIONS
+
+
