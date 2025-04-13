@@ -22,6 +22,7 @@ class Agent:
         self.initialState= puzzle
         self.heuristic= heuristic
         self.solution= None
+        self.expandedNodeCount= 0
 
     """
     The main MCTS loop
@@ -74,15 +75,15 @@ class Agent:
             # Do the action (write a number in a box)
             self.currentState= action_to_take
 
-            print("Game board updated:")
-            print(self.currentState)
+            #print("Game board updated:")
+            #print(self.currentState)
 
             # Check if the puzzle is still solvable
             solvable= not self.puzzleIsFilled(self.currentState.state) and self.stateIsValid(self.currentState.state)
         
         # Return the search results
         # May or may not be a solved puzzle
-        return self.currentState
+        return self.currentState, self.puzzleIsSolved(self.currentState), self.expandedNodeCount
 
     """
     Go through all the search nodes and update how many times we've searched each one
@@ -255,6 +256,7 @@ class Agent:
 
             Also don't use deepcopy, that's slow.  Find a faster way of copying the state.
         """
+        self.expandedNodeCount+= 1
         # Get every possible action that can be done from the given state
         possible_actions= self.getPossibleActions(state.state)
 
