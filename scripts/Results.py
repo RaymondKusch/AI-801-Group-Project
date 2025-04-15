@@ -9,12 +9,14 @@ class Results:
         self.emptyBoxCount= None
         self.expandedNodeCount= None
         self.searchDuration= None
+        self.puzzleGroup= None
+        self.puzzleNumber= None
         return
     
     def __str__(self):
         string= f"Result:\n\tGiven Puzzle: {self.givenPuzzle}\n\tResult: {self.resultPuzzle}\n\t"
         string= string+ f"Heuristic: {self.heuristic}\n\tSolved: {self.solved}\n\tEmpty Boxes: {self.emptyBoxCount}"
-        string= string+ f"\n\tNum Expanded Nodes: {self.expandedNodeCount}\n\tSearch Duration: {self.searchDuration}"
+        string= string+ f"\n\tNum Expanded Nodes: {self.expandedNodeCount}\n\tSearch Duration: {self.searchDuration}\n\tGroup: {self.puzzleGroup}\n\tNumber: {self.puzzleNumber}"
         return string
 
     
