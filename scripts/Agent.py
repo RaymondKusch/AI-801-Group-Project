@@ -75,8 +75,8 @@ class Agent:
             # Do the action (write a number in a box)
             self.currentState= action_to_take
 
-            #print("Game board updated:")
-            #print(self.currentState)
+            print("Game board updated:")
+            print(self.currentState)
 
             # Check if the puzzle is still solvable
             solvable= not self.puzzleIsFilled(self.currentState.state) and self.stateIsValid(self.currentState.state)

@@ -59,6 +59,8 @@ def recordResults(results):
                 "Search Duration": duration
         }
         csv_stuff_to_write.append(info)
+
+    print(csv_stuff_to_write)
     
     column_names= ["Group","Puzzle Number", "Heuristic", "Solved",
                    "Empty Box Count", "Expanded Node Count", "Search Duration"]
@@ -78,17 +80,17 @@ def main():
     all_results= []
     for heuristic in heuristics:
         for iteration in range(5):
-            for number,puzzle in SudokuPuzzles.PATTERNED.items():
-                print(f"\n\nBeginning PATTERNED Puzzle {number}!\n\n")
-                results= runPuzzle(puzzle, heuristic, number, "PATTERNED")
-                all_results.append(results)
-                print(results)
+            #for number,puzzle in SudokuPuzzles.PATTERNED.items():
+            #    print(f"\n\nBeginning PATTERNED Puzzle {number}!\n\n")
+            #    results= runPuzzle(puzzle, heuristic, number, "PATTERNED")
+            #    all_results.append(results)
+            #    print(results)
 
-            for number,puzzle in SudokuPuzzles.DENSE_RANDOM.items():
-                print(f"\n\nBeginning DENSE_RANDOM Puzzle {number}!\n\n")
-                results= runPuzzle(puzzle, heuristic, number, "DENSE_RANDOM")
-                all_results.append(results)
-                print(results)
+            #for number,puzzle in SudokuPuzzles.DENSE_RANDOM.items():
+            #    print(f"\n\nBeginning DENSE_RANDOM Puzzle {number}!\n\n")
+            #    results= runPuzzle(puzzle, heuristic, number, "DENSE_RANDOM")
+            #    all_results.append(results)
+            #    print(results)
 
             for number,puzzle in SudokuPuzzles.SPARSE_RANDOM.items():
                 print(f"\n\nBeginning SPARSE_RANDOM Puzzle {number}!\n\n")
