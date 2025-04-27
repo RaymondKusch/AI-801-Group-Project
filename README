@@ -1,0 +1,12 @@
+This code is for an experimental Monte Carlo Tree Search agent designed for Sudoku puzzle environments.  For more details regarding the implementation, it is recommended to read the report found in the Report.pdf file, or watch presentation.mp4 video.  
+
+In this project, a Sudoku puzzle is represented as a 9x9 integer matrix, in the form of python lists.  The puzzles used for testing are all defined in scripts/SudokuPuzzles.py.  If you are interested in experimenting with new puzzles, it is recommended you add them to an existing group in SudokuPuzzles.py and run the tests using the instructions below.
+
+Running the code:
+    From the project root directory enter the command `python3 scripts/main.py --group GROUP --puzzle PUZZLE --heuristic HEURISTIC`
+        * --group refers to the puzzle groups defined in the SudokuPuzzles.py script.  GROUP can be 'patterned', 'dense', or 'sparse'.
+        * --puzzle refers to the puzzle number within the group.  This is expected to be an integer value.  If GROUP==patterned or GROUP==dense, then 1<=PUZZLE<=5.  If GROUP==sparse, then 1<=PUZZLE<=2.
+        * --HEURISTIC refers to the heuristic function used.  There are three options for the heuristic, 'row', 'column', or 'subgrid'.  
+
+Requirements:
+    Python v3.10+
